@@ -25,6 +25,10 @@ export const DEFAULTS = {
   upstreamProtocol: "https",
   anthropicVersion: "2023-06-01",
   maxBodyBytes: 64 * 1024 * 1024,
+  modelMap: null,
+  maxTokensMap: null,
+  defaultMaxTokens: undefined,
+  cacheControl: { enabled: true, breakpoints: 3 },
 };
 
 /** Extract an API key from either supported inbound header. */
@@ -96,23 +100,33 @@ export function createRelayServer(options = {}) {
 
       let converted;
       try {
-        converted = await toAnthropic(body, { fetchImage: cfg.fetchImage });
+        converted = await toAnthropic(body, {
+          fetchImage: cfg.fetchImage,
+          modelMap: cfg.modelMap,
+          maxTokensMap: cfg.maxTokensMap,
+          defaultMaxTokens: cfg.defaultMaxTokens,
+          cacheControl: cfg.cacheControl,
+        });
       } catch (err) {
         res.writeHead(500, { "content-type": "application/json" });
         res.end(openAIError(500, `request translation failed: ${err.message}`, "relay_error"));
         return;
       }
 
-      const { anthropic, displayModel, effort, includeUsage } = converted;
+      const { anthropic, displayModel, effort, includeUsage, mappedFrom, cacheBreakpoints } =
+        converted;
       const ctx = { id: `chatcmpl-${Date.now().toString(36)}`, displayModel };
 
       if (cfg.dump) {
         const roles = anthropic.messages.map((m) => m.role[0]).join("");
         log.info(
-          `${displayModel} -> ${anthropic.model} effort=${effort ?? "-"} ` +
+          `${displayModel} -> ${anthropic.model}` +
+            `${mappedFrom ? ` (mapped from ${mappedFrom})` : ""} ` +
+            `effort=${effort ?? "-"} ` +
             `max=${anthropic.max_tokens} msgs=${anthropic.messages.length}(${roles}) ` +
             `system=${anthropic.system ? "y" : "n"} tools=${anthropic.tools?.length ?? 0} ` +
-            `tool_choice=${anthropic.tool_choice?.type ?? "-"} stream=${anthropic.stream}`,
+            `tool_choice=${anthropic.tool_choice?.type ?? "-"} cache=${cacheBreakpoints} ` +
+            `stream=${anthropic.stream}`,
         );
       }
 
