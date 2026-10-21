@@ -1,5 +1,8 @@
 # workbuddy-protocol-relay
 
+[![pipeline status](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/badges/main/pipeline.svg)](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/-/pipelines)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A small local relay that lets **OpenAI-only chat clients** talk to
 **Anthropic-only model endpoints** — translating the request body in one
 direction and the streaming response in the other.
