@@ -102,3 +102,20 @@ Every non-2xx upstream response is re-emitted with the OpenAI error envelope:
 | Request translation threw | 500 |
 | Upstream connection failed | 502 |
 | Upstream non-200 | Upstream status, preserved |
+
+## Fields the relay injects that the client never sent
+
+OpenAI's schema has no equivalent for these, so the relay supplies them when
+the corresponding feature is enabled.
+
+| Upstream field | Source | Notes |
+| --- | --- | --- |
+| `system` as a block array | a plain `string` system prompt | only when caching is on; the text moves into one `text` block so it can carry `cache_control` |
+| `cache_control: {type: "ephemeral"}` | placed by the relay | up to 4 per request; last block of the system prompt, then the newest turns |
+| `max_tokens` | `RELAY_MAX_TOKENS_MAP`, `RELAY_MAX_TOKENS`, or 32000 | clamped to 128000 |
+| `model` | `RELAY_MODEL_MAP` | applied after `-1m-<effort>` decoding |
+| `thinking` + `output_config` | `-1m-<effort>` suffix or `reasoning_effort` | `{type: "adaptive"}` and `{effort: …}` |
+
+Because `cache_control` is a field the upstream validates rather than ignores,
+caching is the one injection that can fail on a strict gateway. `RELAY_CACHE_CONTROL=off`
+restores the plain-string system prompt.

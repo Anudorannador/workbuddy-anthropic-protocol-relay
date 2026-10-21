@@ -4,6 +4,31 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-21
+
+### Added
+
+- Prompt caching. The OpenAI schema cannot express caching, so the relay injects
+  `cache_control: {type: "ephemeral"}` breakpoints itself: the system prompt
+  moves into a cached text block and up to four breakpoints (three by default)
+  sit on the newest turns. Controlled by `RELAY_CACHE_CONTROL` and
+  `RELAY_CACHE_BREAKPOINTS`.
+- `RELAY_MODEL_MAP` rewrites the model name sent upstream, applied after
+  `-1m-<effort>` decoding so one entry covers every preset. `*` is a catch-all.
+- `RELAY_MAX_TOKENS_MAP` and `RELAY_MAX_TOKENS` supply an output cap for clients
+  that never send one. Precedence: request, map, global, 32000; clamped to
+  128000.
+- Startup log line reporting cache mode and map sizes. The per-request dump line
+  now also reports `mapped from …` and the number of cache breakpoints.
+
+### Changed
+
+- `toAnthropic` accepts `modelMap`, `maxTokensMap`, `defaultMaxTokens` and
+  `cacheControl`, and returns `mappedFrom` and `cacheBreakpoints`.
+- Translation logic split further: `src/cache-control.mjs` and
+  `src/model-options.mjs`, both pure and dependency free.
+- Unit tests: 31 to 60.
+
 ## [1.0.0] - 2026-10-21
 
 ### Added

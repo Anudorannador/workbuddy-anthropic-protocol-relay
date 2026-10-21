@@ -33,6 +33,12 @@ recognise `content_block_delta` frames.
   of being forwarded, so requests do not fail with HTTP 400.
 - **Reasoning presets in the model id** — `<model>-1m-<effort>` lets a client
   that cannot set effort per request offer one entry per preset.
+- **Prompt caching on by default** — OpenAI has no `cache_control`, so a client
+  that speaks only OpenAI never asks for caching. The relay adds breakpoints at
+  the tail of the conversation, which is what makes a long agent session
+  affordable.
+- **Per-model overrides** — rewrite model names and supply a `max_tokens` the
+  client never sends, without editing per-client configuration.
 - **Streaming-safe** — SSE frames are parsed incrementally and are resilient to
   arbitrary TCP chunk boundaries.
 - **Loopback only, zero credential storage** — the relay forwards the API key
@@ -47,7 +53,7 @@ Requires Node.js 20 or newer.
 git clone <this-repo>
 cd workbuddy-protocol-relay
 
-npm test           # 31 unit tests, no network required
+npm test           # 60 unit tests, no network required
 npm start          # starts on http://127.0.0.1:8787
 ```
 
@@ -94,6 +100,50 @@ The effort maps to `thinking: {type: "adaptive"}` plus
 `output_config: {effort: …}`. Prefix an id with `raw:` if a genuine model name
 ends in `-1m`.
 
+## Prompt caching
+
+OpenAI's request schema has no way to say "cache this prefix", so an
+OpenAI-only client re-sends the whole conversation at full price on every turn.
+The relay adds `cache_control: {type: "ephemeral"}` breakpoints itself:
+
+| Breakpoint | Where | Why |
+| --- | --- | --- |
+| 1 | last block of the system prompt | most stable prefix |
+| 2, 3 | last block of the newest turns | grows the reusable prefix every turn |
+
+Rules the implementation follows, because the upstream rejects anything else:
+
+- at most **4** breakpoints per request (`RELAY_CACHE_BREAKPOINTS`)
+- a breakpoint sits on a content block, never on a message
+- only `text`, `image`, `document`, `tool_use` and `tool_result` are cacheable
+- a prefix shorter than the model's minimum simply is not cached — that is not
+  an error, so short chats behave exactly as before
+
+Caching pays off from roughly the second turn of a conversation, and is most
+visible in agent sessions that resend tens of thousands of tokens of tools and
+history. Turn it off with `RELAY_CACHE_CONTROL=off` if your gateway rejects the
+field.
+
+## Per-model overrides
+
+Two things a client often cannot express:
+
+```bash
+# rewrite the name the client asks for
+RELAY_MODEL_MAP="claude-sonnet-5-5=claude-sonnet-5-5-20260101,fast=claude-haiku-5-5"
+
+# supply max_tokens when the client omits it
+RELAY_MAX_TOKENS_MAP="claude-haiku-5-5:32000,claude-opus-5-5:64000"
+
+# global fallback for everything else
+RELAY_MAX_TOKENS=32000
+```
+
+`*` works as a catch-all in both maps. Precedence for `max_tokens` is: value in
+the request, then the map, then `RELAY_MAX_TOKENS`, then 32000 — always clamped
+to 128000. The model map is applied **after** `-1m-<effort>` decoding, so one
+entry covers every preset of that model.
+
 ## Configuration
 
 All configuration is environment based:
@@ -108,6 +158,11 @@ All configuration is environment based:
 | `RELAY_UPSTREAM_PROTO` | `https` | `https` or `http`. |
 | `RELAY_DUMP` | unset | `1` logs one line per translated request. |
 | `RELAY_LOG_FILE` | unset | Append logs to a file. |
+| `RELAY_MODEL_MAP` | unset | `from=to,from=to` name rewriting. `*` is a catch-all. |
+| `RELAY_MAX_TOKENS_MAP` | unset | `model:64000,model:32000` per-model output cap. |
+| `RELAY_MAX_TOKENS` | `32000` | Fallback `max_tokens` when the request has none. |
+| `RELAY_CACHE_CONTROL` | `auto` | `auto` adds prompt-cache breakpoints, `off` disables. |
+| `RELAY_CACHE_BREAKPOINTS` | `3` | Breakpoints per request, clamped to 4. |
 | `RELAY_NODE` | auto-detected | Absolute `node` path. Required when started by a launch agent with a minimal `PATH`. |
 
 ### Local configuration file
@@ -162,6 +217,8 @@ src/relay.mjs              HTTP server, upstream forwarding
 src/translate-request.mjs  OpenAI -> Anthropic
 src/translate-response.mjs Anthropic -> OpenAI (stream + non-stream)
 src/model-id.mjs           model id suffix decoding
+src/model-options.mjs      name rewriting, max_tokens resolution
+src/cache-control.mjs      prompt-cache breakpoint placement
 test/                      node:test unit suites
 docs/                      protocol mapping, deployment, troubleshooting
 scripts/                   start / stop / status / macOS app builder

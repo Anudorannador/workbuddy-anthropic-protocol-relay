@@ -7,6 +7,8 @@
  */
 
 import { decodeModelId, normalizeEffort } from "./model-id.mjs";
+import { applyCacheControl } from "./cache-control.mjs";
+import { resolveMaxTokens, resolveModel } from "./model-options.mjs";
 
 export const DEFAULT_MAX_TOKENS = 32000;
 export const MAX_TOKENS_CAP = 128000;
@@ -268,7 +270,13 @@ function upgradeLegacyFunctions(body) {
  * Translate an OpenAI request body into an Anthropic request body.
  *
  * @param {any} body
- * @param {{ fetchImage?: typeof fetch }} [options]
+ * @param {{
+ *   fetchImage?: typeof fetch,
+ *   modelMap?: Map<string, string>,
+ *   maxTokensMap?: Map<string, number>,
+ *   defaultMaxTokens?: number,
+ *   cacheControl?: { enabled?: boolean, breakpoints?: number },
+ * }} [options]
  */
 export async function toAnthropic(body, options = {}) {
 	const systemParts = [];
@@ -361,12 +369,16 @@ export async function toAnthropic(body, options = {}) {
 		messages.push({ role: "user", content: [{ type: "text", text: "hi" }] });
 	}
 
-	const { model, effort: idEffort } = decodeModelId(body.model);
+	const { model: requestedModel, effort: idEffort } = decodeModelId(body.model);
+	const model = resolveModel(requestedModel, options.modelMap);
 	const requestedMax = Number(body.max_completion_tokens ?? body.max_tokens);
-	const maxTokens = Math.min(
-		Number.isFinite(requestedMax) && requestedMax > 0 ? requestedMax : DEFAULT_MAX_TOKENS,
-		MAX_TOKENS_CAP,
-	);
+	const maxTokens = resolveMaxTokens({
+		requested: requestedMax,
+		model,
+		map: options.maxTokensMap,
+		fallback: options.defaultMaxTokens ?? DEFAULT_MAX_TOKENS,
+		cap: MAX_TOKENS_CAP,
+	});
 
 	const anthropic = {
 		model,
@@ -423,10 +435,18 @@ export async function toAnthropic(body, options = {}) {
 		anthropic.system = anthropic.system ? `${anthropic.system}\n\n${hint}` : hint;
 	}
 
+	const cacheBreakpoints = options.cacheControl?.enabled
+		? applyCacheControl(anthropic, {
+				breakpoints: options.cacheControl.breakpoints,
+			})
+		: 0;
+
 	return {
 		anthropic,
 		displayModel: body.model,
 		effort: anthropic.output_config?.effort ?? null,
 		includeUsage: body.stream_options?.include_usage === true,
+		mappedFrom: model === requestedModel ? null : requestedModel,
+		cacheBreakpoints,
 	};
 }
