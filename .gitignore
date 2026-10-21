@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Runtime artifacts
+*.pid
+*.log
+*.out
+.relay.pid
+relay.log
+
+# Local configuration that may contain credentials — never commit
+.env
+.env.*
+config/models.json
+config/*.local.json
+
+# Build output
+dist/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

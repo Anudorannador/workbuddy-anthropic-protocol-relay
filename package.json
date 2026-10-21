@@ -1,0 +1,43 @@
+{
+  "name": "workbuddy-protocol-relay",
+  "version": "1.0.0",
+  "description": "Local relay that lets OpenAI-only desktop agents use Anthropic-only model endpoints, with full request and streaming-response translation.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "protocol-relay": "bin/relay.mjs"
+  },
+  "exports": {
+    ".": "./src/relay.mjs",
+    "./request": "./src/translate-request.mjs",
+    "./response": "./src/translate-response.mjs",
+    "./model-id": "./src/model-id.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "docs/",
+    "config/models.example.json",
+    "scripts/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "node bin/relay.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:watch": "node --test --watch test/*.test.mjs"
+  },
+  "keywords": [
+    "openai",
+    "anthropic",
+    "proxy",
+    "relay",
+    "protocol-translation",
+    "llm",
+    "streaming"
+  ]
+}
