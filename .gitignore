@@ -11,6 +11,7 @@ relay.log
 # Local configuration that may contain credentials — never commit
 .env
 .env.*
+!.env.example
 config/models.json
 config/*.local.json
 

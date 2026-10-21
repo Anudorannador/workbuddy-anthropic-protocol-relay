@@ -3,6 +3,14 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [ -f "$DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$DIR/.env"
+  set +a
+fi
+
 PORT="${RELAY_PORT:-8787}"
 HOST="${RELAY_HOST:-127.0.0.1}"
 

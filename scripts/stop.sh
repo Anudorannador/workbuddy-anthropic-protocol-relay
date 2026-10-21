@@ -5,6 +5,13 @@ set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PIDFILE="$DIR/.relay.pid"
 
+if [ -f "$DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$DIR/.env"
+  set +a
+fi
+
 if [ -f "$PIDFILE" ]; then
   PID="$(cat "$PIDFILE" 2>/dev/null || true)"
   if [ -n "${PID:-}" ] && kill -0 "$PID" 2>/dev/null; then

@@ -105,6 +105,20 @@ All configuration is environment based:
 | `RELAY_UPSTREAM_PROTO` | `https` | `https` or `http`. |
 | `RELAY_DUMP` | unset | `1` logs one line per translated request. |
 | `RELAY_LOG_FILE` | unset | Append logs to a file. |
+| `RELAY_NODE` | auto-detected | Absolute `node` path. Required when started by a launch agent with a minimal `PATH`. |
+
+### Local configuration file
+
+The scripts under `scripts/` source an optional `.env` in the repository root, so
+you can keep machine-specific settings out of your shell profile:
+
+```bash
+cp .env.example .env
+$EDITOR .env
+```
+
+`.env` is git-ignored. Never place an API key in it — the key always comes from
+the inbound request header.
 
 ## Long-running use
 
