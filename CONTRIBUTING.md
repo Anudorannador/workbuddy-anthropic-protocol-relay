@@ -51,7 +51,7 @@ docs(mapping): document response_format emulation
 test(model-id): cover raw: escape hatch
 ```
 
-## Merge requests
+## Pull requests
 
 - Describe the protocol difference being addressed and link the upstream docs.
 - State which clients you tested against, if any.

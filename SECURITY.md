@@ -42,9 +42,9 @@ sensitive if that matters to you.
 
 ## Reporting a vulnerability
 
-Report privately through the GitLab project's **Issues → New issue** with the
-`security` label, or contact the maintainer directly. Please do not open a public
-issue for an unpatched vulnerability.
+Use GitHub's private reporting flow: **Security → Report a vulnerability** on
+[the repository](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay).
+Please do not open a public issue for an unpatched vulnerability.
 
 Include reproduction steps, the relay version from `/_health`, and the affected
 file or endpoint. Acknowledgement is targeted within a few days.

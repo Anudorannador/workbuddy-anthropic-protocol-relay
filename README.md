@@ -1,6 +1,6 @@
 # workbuddy-protocol-relay
 
-[![pipeline status](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/badges/main/pipeline.svg)](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/-/pipelines)
+[![ci](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A small local relay that lets **OpenAI-only chat clients** talk to
@@ -61,7 +61,7 @@ Health check:
 
 ```bash
 curl -s http://127.0.0.1:8787/_health
-# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.0.0"}
+# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.1.0"}
 ```
 
 Then point your client at `http://127.0.0.1:8787/v1/chat/completions` and supply

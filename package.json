@@ -39,5 +39,13 @@
     "protocol-translation",
     "llm",
     "streaming"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay.git"
+  },
+  "homepage": "https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay#readme",
+  "bugs": {
+    "url": "https://github.com/Anudorannador/workbuddy-anthropic-protocol-relay/issues"
+  }
 }
