@@ -4,6 +4,12 @@ stages:
 
 default:
   image: node:22-alpine
+  # Pin every job to the dedicated runner so a shared/instance runner with
+  # different tooling can never pick these up.
+  tags:
+    - linux
+    - node
+    - docker
   cache:
     key: "$CI_COMMIT_REF_SLUG"
     paths:
