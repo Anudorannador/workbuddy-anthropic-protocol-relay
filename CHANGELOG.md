@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-10-22
+
+### Changed
+
+- The context marker in a model id is no longer limited to `-1m`: any
+  `-<number>k` / `-<number>m` suffix is recognised and stripped (`-512k-high`,
+  `-200k`), so a client-side budget below 1M can be labelled in the id without
+  leaking into the upstream model name. Matching is case-insensitive and the
+  decoded effort is lower-cased.
+- Ids whose trailing token is not a context marker are left untouched
+  (`gpt-4o`, `qwen2.5-72b`, `claude-haiku-5-5-high`).
+
 ## [1.2.0] - 2026-10-22
 
 ### Added

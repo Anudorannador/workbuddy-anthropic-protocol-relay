@@ -96,7 +96,7 @@ needed when the client cannot send an effort at all.
 
 Precedence, most explicit first: **id suffix → `reasoning.effort` → `reasoning_effort` → none**. Effort maps to `thinking: {type: "adaptive"}` plus `output_config: {effort: …}`; with no effort at all the relay sends no `thinking` block, which is the right choice for endpoints that reject it.
 
-Context length needs no encoding: **1M is already the upstream default** for current Claude models, so `-1m-` in an id is decorative. `maxInputTokens` and `contextWindow.supportedLengths` are client-side declarations only — they drive the "Context" selector and the local budget, and are never transmitted upstream.
+Context length needs no encoding: **1M is already the upstream default** for current Claude models, so the context marker in an id is decorative. It accepts any `-<number>k` or `-<number>m` form (`-1m`, `-512k`, `-200k`) and is stripped before the request leaves the relay; it only labels the client-side budget. `maxInputTokens` and `contextWindow.supportedLengths` are client-side declarations too — they drive the "Context" selector and the local budget, and are never transmitted upstream.
 
 Prefix an id with `raw:` to opt out of suffix decoding when a genuine model name
 ends in `-1m` (for example `raw:some-1m-model`).

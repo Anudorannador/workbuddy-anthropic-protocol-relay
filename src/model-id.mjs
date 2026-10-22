@@ -3,15 +3,18 @@
  *
  * A model id may encode request options as a suffix:
  *
- *   <upstream-model>-1m-<effort>
+ *   <upstream-model>-<context><unit>[-<effort>]
  *
  * Examples:
- *   claude-haiku-5-5-1m-high   -> upstream "claude-haiku-5-5", effort "high"
- *   claude-sonnet-5-5-1m       -> upstream "claude-sonnet-5-5", no effort
- *   gpt-4o-mini                -> unchanged
+ *   claude-haiku-5-5-1m-high    -> "claude-haiku-5-5", effort "high"
+ *   claude-haiku-5-5-512k-high  -> "claude-haiku-5-5", effort "high"
+ *   claude-sonnet-5-5-1m        -> "claude-sonnet-5-5", no effort
+ *   gpt-4o-mini                 -> unchanged
  *
- * The suffix exists because most desktop clients cannot set a per-model
- * reasoning effort; encoding it in the model id gives one entry per preset.
+ * The context marker is decorative: it labels a client-side budget (the client
+ * already declares it via maxInputTokens) and is never sent upstream, because
+ * Anthropic has no such parameter. The effort marker matters whenever the client
+ * cannot send an effort of its own.
  */
 
 /** Reasoning effort levels accepted by the relay, ordered low -> high. */
@@ -27,7 +30,7 @@ export const EFFORT_ALIAS = {
 	max: "max",
 };
 
-const SUFFIX = /^(.*?)-1m(?:-(low|medium|high|xhigh|max))?$/;
+const SUFFIX = /^(.*?)-(\d+(?:\.\d+)?)([km])(?:-(low|medium|high|xhigh|max))?$/i;
 
 /**
  * Split a model id into its upstream name and optional effort.
@@ -43,7 +46,7 @@ export function decodeModelId(raw) {
 	if (raw.startsWith("raw:")) return { model: raw.slice(4), effort: null };
 	const m = raw.match(SUFFIX);
 	if (!m) return { model: raw, effort: null };
-	return { model: m[1], effort: m[2] ?? null };
+	return { model: m[1], effort: m[4] ? m[4].toLowerCase() : null };
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-protocol-relay",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Local relay that lets OpenAI-only desktop agents use Anthropic-only model endpoints, with full request and streaming-response translation.",
   "type": "module",
   "license": "MIT",
