@@ -75,9 +75,9 @@ test("translates a text stream into OpenAI chunks", () => {
 
 	const usage = frames.find((f) => f.usage);
 	assert.deepEqual(usage.usage, {
-		prompt_tokens: 5,
+		prompt_tokens: 7,
 		completion_tokens: 3,
-		total_tokens: 8,
+		total_tokens: 10,
 		prompt_tokens_details: { cached_tokens: 2 },
 	});
 
@@ -168,7 +168,8 @@ test("non-streaming conversion produces a chat.completion", () => {
 	assert.equal(out.object, "chat.completion");
 	assert.equal(out.choices[0].message.content, "hello world");
 	assert.equal(out.choices[0].finish_reason, "stop");
-	assert.equal(out.usage.total_tokens, 6);
+	assert.equal(out.usage.total_tokens, 7);
+	assert.equal(out.usage.prompt_tokens, 5);
 	assert.equal(out.usage.prompt_tokens_details.cached_tokens, 1);
 });
 
@@ -200,4 +201,50 @@ test("error helper emits an OpenAI-shaped body", () => {
 	assert.deepEqual(body, {
 		error: { message: "slow down", type: "rate_limit_error", code: 429 },
 	});
+});
+
+test("prompt_tokens counts cache reads and cache writes as input", () => {
+	// Anthropic's input_tokens is the uncached remainder only, so a fully cached
+	// prompt reports a handful of tokens there; OpenAI clients expect the total.
+	const out = convertNonStreaming(
+		{
+			id: "msg_3",
+			content: [{ type: "text", text: "ok" }],
+			stop_reason: "end_turn",
+			usage: {
+				input_tokens: 4,
+				output_tokens: 4,
+				cache_read_input_tokens: 7771,
+				cache_creation_input_tokens: 100,
+			},
+		},
+		ctx,
+	);
+	assert.equal(out.usage.prompt_tokens, 7875);
+	assert.equal(out.usage.prompt_tokens_details.cached_tokens, 7771);
+	assert.equal(out.usage.total_tokens, 7879);
+});
+
+test("streaming prompt_tokens includes the cached prefix", () => {
+	const c = collect();
+	c.translator.push(
+		sse([
+			{
+				type: "message_start",
+				message: {
+					usage: {
+						input_tokens: 4,
+						cache_read_input_tokens: 4000,
+						cache_creation_input_tokens: 0,
+					},
+				},
+			},
+			{ type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 2 } },
+			{ type: "message_stop" },
+		]),
+	);
+	const usage = c.parsed().find((f) => f.usage)?.usage;
+	assert.equal(usage.prompt_tokens, 4004);
+	assert.equal(usage.prompt_tokens_details.cached_tokens, 4000);
+	assert.equal(usage.total_tokens, 4006);
 });

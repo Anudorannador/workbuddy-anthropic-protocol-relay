@@ -83,8 +83,13 @@ export function createSseTranslator({ write, ctx, includeUsage = false, now = Da
 		switch (event.type) {
 			case "message_start": {
 				const u = event.message?.usage ?? {};
-				usage.prompt = u.input_tokens ?? 0;
-				usage.cached = u.cache_read_input_tokens ?? 0;
+				// Anthropic reports `input_tokens` as the *uncached* remainder only;
+				// cache reads and cache writes are billed on top. OpenAI's
+				// `prompt_tokens` means the whole input, so the three add up.
+				const cacheRead = u.cache_read_input_tokens ?? 0;
+				const cacheWrite = u.cache_creation_input_tokens ?? 0;
+				usage.prompt = (u.input_tokens ?? 0) + cacheRead + cacheWrite;
+				usage.cached = cacheRead;
 				if (!roleSent) {
 					send(chunk({ role: "assistant", content: "" }));
 					roleSent = true;
@@ -234,7 +239,11 @@ export function convertNonStreaming(message, ctx) {
 	if (reasoning) message2.reasoning_content = reasoning;
 	if (toolCalls.length) message2.tool_calls = toolCalls;
 
-	const input = message.usage?.input_tokens ?? 0;
+// `input_tokens` excludes cached prefix tokens; OpenAI's `prompt_tokens` is the
+	// whole input, so cache reads and writes are added back in.
+	const cacheRead = message.usage?.cache_read_input_tokens ?? 0;
+	const cacheWrite = message.usage?.cache_creation_input_tokens ?? 0;
+	const input = (message.usage?.input_tokens ?? 0) + cacheRead + cacheWrite;
 	const output = message.usage?.output_tokens ?? 0;
 
 	return {
@@ -255,7 +264,7 @@ export function convertNonStreaming(message, ctx) {
 			completion_tokens: output,
 			total_tokens: input + output,
 			prompt_tokens_details: {
-				cached_tokens: message.usage?.cache_read_input_tokens ?? 0,
+				cached_tokens: cacheRead,
 			},
 		},
 	};

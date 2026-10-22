@@ -61,7 +61,7 @@ Health check:
 
 ```bash
 curl -s http://127.0.0.1:8787/_health
-# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.1.0"}
+# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.1.1"}
 ```
 
 Then point your client at `http://127.0.0.1:8787/v1/chat/completions` and supply

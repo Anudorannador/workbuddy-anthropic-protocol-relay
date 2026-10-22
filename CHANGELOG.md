@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-22
+
+### Fixed
+
+- `usage.prompt_tokens` now includes cache reads and cache writes. Anthropic
+  reports `input_tokens` as the *uncached remainder* only, so a fully cached
+  prompt used to report a handful of tokens (observed in production: 4 instead
+  of 7775) and understated the real input size by three orders of magnitude.
+  `prompt_tokens_details.cached_tokens` still reports only the cache read.
+
 ## [1.1.0] - 2026-10-21
 
 ### Added
