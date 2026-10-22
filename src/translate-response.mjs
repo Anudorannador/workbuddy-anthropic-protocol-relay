@@ -139,8 +139,20 @@ export function createSseTranslator({ write, ctx, includeUsage = false, now = Da
 			}
 			case "message_delta": {
 				if (event.delta?.stop_reason) finishReason = mapFinish(event.delta.stop_reason);
-				if (event.usage?.output_tokens != null) {
-					usage.completion = event.usage.output_tokens;
+				const u = event.usage ?? {};
+				if (u.output_tokens != null) usage.completion = u.output_tokens;
+				// Some gateways leave the prompt counts out of message_start and
+				// only fill them in here. Take them when present and non-zero so
+				// an empty message_start does not win.
+				const read = u.cache_read_input_tokens;
+				const write = u.cache_creation_input_tokens;
+				const fresh = u.input_tokens;
+				if (fresh != null || read != null || write != null) {
+					const total = (fresh ?? 0) + (read ?? 0) + (write ?? 0);
+					if (total > 0) {
+						usage.prompt = total;
+						usage.cached = read ?? 0;
+					}
 				}
 				break;
 			}

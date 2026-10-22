@@ -13,6 +13,10 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   prompt used to report a handful of tokens (observed in production: 4 instead
   of 7775) and understated the real input size by three orders of magnitude.
   `prompt_tokens_details.cached_tokens` still reports only the cache read.
+- Streaming usage is no longer lost when the gateway leaves the prompt counts out
+  of `message_start` and reports them in `message_delta` instead. On the affected
+  gateway every streamed reply reported `prompt_tokens: 0`, which is the path an
+  agent client actually takes.
 
 ## [1.1.0] - 2026-10-21
 
