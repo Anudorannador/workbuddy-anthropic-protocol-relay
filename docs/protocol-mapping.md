@@ -114,7 +114,7 @@ the corresponding feature is enabled.
 | `cache_control: {type: "ephemeral"}` | placed by the relay | up to 4 per request; last block of the system prompt, then the newest turns |
 | `max_tokens` | `RELAY_MAX_TOKENS_MAP`, `RELAY_MAX_TOKENS`, or 32000 | clamped to 128000 |
 | `model` | `RELAY_MODEL_MAP` | applied after `-1m-<effort>` decoding |
-| `thinking` + `output_config` | `-1m-<effort>` suffix or `reasoning_effort` | `{type: "adaptive"}` and `{effort: …}` |
+| `thinking` + `output_config` | `-1m-<effort>` suffix, `reasoning.effort`, or `reasoning_effort` | `{type: "adaptive"}` and `{effort: …}`; first match wins |
 
 Because `cache_control` is a field the upstream validates rather than ignores,
 caching is the one injection that can fail on a strict gateway. `RELAY_CACHE_CONTROL=off`

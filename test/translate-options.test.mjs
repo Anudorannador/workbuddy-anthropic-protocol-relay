@@ -82,3 +82,30 @@ test("cache breakpoints never land on the thinking config", async () => {
 	assert.ok(breaks.length <= 4);
 	assert.deepEqual(anthropic.thinking, { type: "adaptive" });
 });
+
+test("effort can come from reasoning.effort on a plain model id", async () => {
+	const { anthropic, effort } = await toAnthropic(base({ model: "claude-haiku-5-5", reasoning: { effort: "high" } }));
+	assert.equal(effort, "high");
+	assert.deepEqual(anthropic.thinking, { type: "adaptive" });
+	assert.deepEqual(anthropic.output_config, { effort: "high" });
+});
+
+test("an id suffix wins over the request-level effort", async () => {
+	const { effort } = await toAnthropic(base({ reasoning: { effort: "low" } }));
+	assert.equal(effort, "high");
+});
+
+test("reasoning.effort accepts aliases and rejects junk", async () => {
+	const alias = await toAnthropic(base({ model: "claude-haiku-5-5", reasoning: { effort: "minimal" } }));
+	assert.equal(alias.effort, "low");
+
+	const junk = await toAnthropic(base({ model: "claude-haiku-5-5", reasoning: { effort: "turbo" } }));
+	assert.equal(junk.effort, null);
+	assert.equal(junk.anthropic.thinking, undefined);
+});
+
+test("no suffix and no request effort means no thinking block", async () => {
+	const { anthropic, effort } = await toAnthropic(base({ model: "claude-haiku-5-5" }));
+	assert.equal(effort, null);
+	assert.equal(anthropic.thinking, undefined);
+});

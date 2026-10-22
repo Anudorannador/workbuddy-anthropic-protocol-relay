@@ -84,21 +84,22 @@ entry. The essential fields:
 Copy the example to `config/models.json` and fill in your key. That filename is
 git-ignored on purpose.
 
-### Model id convention
+### Model ids and reasoning effort
 
-```
-<upstream-model>-1m-<effort>
-```
+Two shapes work. **One entry per model is usually enough** — the suffix is only
+needed when the client cannot send an effort at all.
 
-| Id | Upstream model | Reasoning |
+| Id | Effort comes from | When to use |
 | --- | --- | --- |
-| `claude-haiku-5-5-1m-high` | `claude-haiku-5-5` | `high` |
-| `claude-sonnet-5-5-1m` | `claude-sonnet-5-5` | upstream default |
-| `raw:some-1m-model` | `some-1m-model` | none (decoding disabled) |
+| `claude-haiku-5-5` | the client's effort selector, sent as `reasoning.effort` | default; keeps the model picker short |
+| `claude-haiku-5-5-1m-high` | the id itself | the client has no effort selector, or you want a fixed preset per entry |
 
-The effort maps to `thinking: {type: "adaptive"}` plus
-`output_config: {effort: …}`. Prefix an id with `raw:` if a genuine model name
-ends in `-1m`.
+Precedence, most explicit first: **id suffix → `reasoning.effort` → `reasoning_effort` → none**. Effort maps to `thinking: {type: "adaptive"}` plus `output_config: {effort: …}`; with no effort at all the relay sends no `thinking` block, which is the right choice for endpoints that reject it.
+
+Context length needs no encoding: **1M is already the upstream default** for current Claude models, so `-1m-` in an id is decorative. `maxInputTokens` and `contextWindow.supportedLengths` are client-side declarations only — they drive the "Context" selector and the local budget, and are never transmitted upstream.
+
+Prefix an id with `raw:` to opt out of suffix decoding when a genuine model name
+ends in `-1m` (for example `raw:some-1m-model`).
 
 ## Prompt caching
 

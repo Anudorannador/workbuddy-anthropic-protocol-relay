@@ -417,8 +417,12 @@ export async function toAnthropic(body, options = {}) {
 		if (mapped) anthropic.tool_choice = mapped;
 	}
 
-	const effort =
-		idEffort ?? normalizeEffort(body.reasoning_effort) ?? null;
+	// Effort can arrive three ways, most explicit first: baked into the model id
+	// (`-1m-high`, a per-entry preset), sent as `reasoning.effort` by a client
+	// that exposes an effort selector, or as OpenAI's `reasoning_effort`.
+	const requestEffort =
+		normalizeEffort(body.reasoning?.effort) ?? normalizeEffort(body.reasoning_effort);
+	const effort = idEffort ?? requestEffort ?? null;
 	if (effort) {
 		anthropic.thinking = { type: "adaptive" };
 		anthropic.output_config = { effort };

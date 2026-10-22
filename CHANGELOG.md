@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-22
+
+### Added
+
+- Reasoning effort is accepted from `reasoning.effort`, the field a client with an
+  effort selector actually sends (WorkBuddy writes it from
+  `reasoning.supportedEfforts`). Precedence is id suffix, then `reasoning.effort`,
+  then `reasoning_effort`, so one model entry per upstream model is now enough and
+  the `-1m-<effort>` presets become optional rather than required.
+
+### Changed
+
+- `config/models.example.json` demonstrates the single-entry shape (effort chosen
+  in the client), with one fixed-preset entry kept as a second example.
+- README no longer implies that context length or effort must be encoded in the
+  model id; `contextWindow`/`supportedLengths` are documented as client-side
+  declarations that are never sent upstream.
+
 ## [1.1.1] - 2026-10-22
 
 ### Fixed

@@ -1,7 +1,7 @@
 [
   {
-    "id": "claude-haiku-5-5-1m-high",
-    "name": "claude-haiku-5-5-1m-high",
+    "id": "claude-haiku-5-5",
+    "name": "Claude Haiku 5.5",
     "vendor": "Custom",
     "url": "http://127.0.0.1:8787/v1/chat/completions",
     "apiKey": "<YOUR_UPSTREAM_API_KEY>",
@@ -19,8 +19,8 @@
     }
   },
   {
-    "id": "claude-sonnet-5-5-1m-medium",
-    "name": "claude-sonnet-5-5-1m-medium",
+    "id": "claude-sonnet-5-5",
+    "name": "Claude Sonnet 5.5",
     "vendor": "Custom",
     "url": "http://127.0.0.1:8787/v1/chat/completions",
     "apiKey": "<YOUR_UPSTREAM_API_KEY>",
@@ -35,6 +35,22 @@
     },
     "reasoning": {
       "supportedEfforts": ["low", "medium", "high", "xhigh", "max"]
+    }
+  },
+  {
+    "id": "claude-haiku-5-5-1m-high",
+    "name": "Claude Haiku 5.5 (high, fixed)",
+    "vendor": "Custom",
+    "url": "http://127.0.0.1:8787/v1/chat/completions",
+    "apiKey": "<YOUR_UPSTREAM_API_KEY>",
+    "supportsToolCall": true,
+    "supportsImages": true,
+    "supportsReasoning": true,
+    "useCustomProtocol": true,
+    "maxInputTokens": 1000000,
+    "maxOutputTokens": 128000,
+    "contextWindow": {
+      "supportedLengths": [200000, 500000, 1000000]
     }
   }
 ]
