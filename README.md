@@ -125,6 +125,43 @@ visible in agent sessions that resend tens of thousands of tokens of tools and
 history. Turn it off with `RELAY_CACHE_CONTROL=off` if your gateway rejects the
 field.
 
+### What an upstream actually honours (measured)
+
+Not every Anthropic-compatible gateway implements per-breakpoint entries. The
+same relay produced these results against one production gateway, all with a
+5.7 K-token prompt and identical settings:
+
+| Request pattern | `cached_tokens` |
+| --- | --- |
+| Second identical request | 5765 / 5769 (99.9%) |
+| Same system, different final user message | 558 (no reuse) |
+| Same messages, different system | 558 (no reuse) |
+| Turn N+1 = turn N with two messages appended | 5772 (99.9%) |
+| Head of the system prompt carries a fresh timestamp | 558 (no reuse) |
+
+Read together: that gateway keeps **one entry per request, at the tail**, and
+only reuses it when the new prompt is an append-only extension of the old one.
+Multiple breakpoints do not buy additional entries there, and moving volatile
+text to the end does not help, because the end is what the entry is keyed on.
+
+Practical consequence: a cache hit needs an **append-only, deterministic
+prompt**. Anything rewritten every turn - a clock, a timestamp with seconds, a
+reshuffled task board, regenerated ids - costs the whole prefix, no matter where
+the breakpoints sit.
+
+Two knobs follow from that:
+
+- `RELAY_CACHE_TTL=1h` keeps the entry across long tool/CI gaps, where the
+  default five-minute window has already expired.
+- `RELAY_CACHE_DEBUG=1` logs, per request, which segment first differs from the
+  previous call for the same model - the fastest way to find the one field that
+  is silently destroying the cache.
+
+`RELAY_CACHE_ANCHOR=1` can relocate time-shaped system paragraphs to the tail of
+the newest user turn. It preserves the information and does help on gateways
+that honour per-breakpoint entries, but on a tail-keyed cache it changes what
+the model sees for no benefit, so it is off by default.
+
 ## Per-model overrides
 
 Two things a client often cannot express:
@@ -164,6 +201,9 @@ All configuration is environment based:
 | `RELAY_MAX_TOKENS` | `32000` | Fallback `max_tokens` when the request has none. |
 | `RELAY_CACHE_CONTROL` | `auto` | `auto` adds prompt-cache breakpoints, `off` disables. |
 | `RELAY_CACHE_BREAKPOINTS` | `3` | Breakpoints per request, clamped to 4. |
+| `RELAY_CACHE_TTL` | `5m` | `1h` requests the extended cache window (sends the beta header). |
+| `RELAY_CACHE_ANCHOR` | `off` | `1` relocates time-shaped system paragraphs out of the cached prefix. |
+| `RELAY_CACHE_DEBUG` | `off` | `1` logs which prompt segment drifted from the previous call. |
 | `RELAY_NODE` | auto-detected | Absolute `node` path. Required when started by a launch agent with a minimal `PATH`. |
 
 ### Local configuration file

@@ -17,6 +17,9 @@
  *                          nor the map provides one (default 32000)
  *   RELAY_CACHE_CONTROL    auto | off — add prompt-cache breakpoints (default auto)
  *   RELAY_CACHE_BREAKPOINTS breakpoints per request, 1-4 (default 3)
+ *   RELAY_CACHE_TTL        1h keeps the cache across long tool/CI gaps (default 5m)
+ *   RELAY_CACHE_ANCHOR     1 relocates time-shaped system paragraphs out of the cached prefix
+ *   RELAY_CACHE_DEBUG      1 logs where the prompt prefix drifted from the last call
  */
 
 import fs from "node:fs";
@@ -45,6 +48,9 @@ const modelMap = parseModelMap(process.env.RELAY_MODEL_MAP);
 const maxTokensMap = parseMaxTokensMap(process.env.RELAY_MAX_TOKENS_MAP);
 const cacheEnabled = (process.env.RELAY_CACHE_CONTROL ?? "auto").toLowerCase() !== "off";
 const cacheBreakpoints = Number(process.env.RELAY_CACHE_BREAKPOINTS ?? 3);
+const cacheTtl = (process.env.RELAY_CACHE_TTL ?? "").toLowerCase() === "1h" ? "1h" : null;
+const cacheDebug = process.env.RELAY_CACHE_DEBUG === "1";
+const cacheAnchor = process.env.RELAY_CACHE_ANCHOR === "1";
 
 const server = createRelayServer({
   host: process.env.RELAY_HOST ?? "127.0.0.1",
@@ -62,7 +68,13 @@ const server = createRelayServer({
   defaultMaxTokens: process.env.RELAY_MAX_TOKENS
     ? Number(process.env.RELAY_MAX_TOKENS)
     : undefined,
-  cacheControl: { enabled: cacheEnabled, breakpoints: cacheBreakpoints },
+  cacheControl: {
+    enabled: cacheEnabled,
+    breakpoints: cacheBreakpoints,
+    ttl: cacheTtl,
+    anchorVolatile: cacheAnchor,
+  },
+  cacheDebug,
   logger: { info: (m) => emit("INFO", m), warn: (m) => emit("WARN", m) },
 });
 
@@ -79,7 +91,8 @@ server.listen(port, host, () => {
   );
   emit(
     "INFO",
-    `cache=${cacheEnabled ? `auto(${cacheBreakpoints})` : "off"} ` +
+    `cache=${cacheEnabled ? `auto(${cacheBreakpoints})` : "off"} ttl=${cacheTtl ?? "5m"} ` +
+      `anchor=${cacheAnchor ? "on" : "off"} debug=${cacheDebug ? "on" : "off"} ` +
       `modelMap=${modelMap.size} maxTokensMap=${maxTokensMap.size} ` +
       `defaultMaxTokens=${process.env.RELAY_MAX_TOKENS ?? "32000"}`,
   );

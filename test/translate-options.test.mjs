@@ -109,3 +109,29 @@ test("no suffix and no request effort means no thinking block", async () => {
 	assert.equal(effort, null);
 	assert.equal(anthropic.thinking, undefined);
 });
+
+test("a missing tool_call id is filled deterministically", async () => {
+	const body = {
+		model: "claude-haiku-5-5",
+		messages: [
+			{ role: "user", content: "call it" },
+			{
+				role: "assistant",
+				content: null,
+				tool_calls: [{ type: "function", function: { name: "get_time", arguments: "{}" } }],
+			},
+			{ role: "tool", tool_call_id: "generated", content: "12:00" },
+		],
+	};
+	const first = await toAnthropic(body);
+	const second = await toAnthropic(body);
+	const idOf = (r) => r.anthropic.messages.find((m) => m.role === "assistant").content[0].id;
+	assert.match(idOf(first), /^toolu_[0-9a-f]{8}$/);
+	assert.equal(idOf(first), idOf(second));
+
+	const other = await toAnthropic({
+		...body,
+		messages: [body.messages[0], { ...body.messages[1], tool_calls: [{ type: "function", function: { name: "get_date", arguments: "{}" } }] }, body.messages[2]],
+	});
+	assert.notEqual(idOf(other), idOf(first));
+});

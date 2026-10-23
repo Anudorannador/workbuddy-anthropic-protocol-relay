@@ -4,6 +4,34 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-23
+
+### Added
+
+- `RELAY_CACHE_TTL=1h` requests the extended prompt-cache window and sends the
+  matching beta header, so an entry survives the long tool/CI gaps that the
+  default five-minute window cannot.
+- `RELAY_CACHE_DEBUG=1` compares each request with the previous one for the same
+  model and logs the first segment that differs, with timestamp/identifier
+  counts. Finding "the cache never hits" without this is guesswork.
+- `RELAY_CACHE_ANCHOR=1` can relocate time-shaped system paragraphs to the tail
+  of the newest user turn, for gateways that honour per-breakpoint entries.
+
+### Fixed
+
+- A missing `tool_call.id` was filled with `Math.random()`, so every request
+  rewrote the prompt prefix and silently destroyed prompt caching for every
+  message after it. The generated id is now derived from the call itself and is
+  stable across turns.
+- `toAnthropic` forwarded only `breakpoints` to the cache layer, dropping `ttl`
+  and `anchorVolatile`, so those settings had no effect.
+
+### Changed
+
+- README documents measured cache behaviour on a tail-keyed gateway: only an
+  append-only, deterministic prompt is reusable there, regardless of breakpoint
+  placement.
+
 ## [1.2.1] - 2026-10-22
 
 ### Changed

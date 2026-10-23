@@ -8,6 +8,7 @@
 
 import { decodeModelId, normalizeEffort } from "./model-id.mjs";
 import { applyCacheControl } from "./cache-control.mjs";
+import { fnv1a } from "./prefix-watch.mjs";
 import { resolveMaxTokens, resolveModel } from "./model-options.mjs";
 
 export const DEFAULT_MAX_TOKENS = 32000;
@@ -339,7 +340,7 @@ export async function toAnthropic(body, options = {}) {
 					}
 				}
 			}
-			for (const call of msg.tool_calls ?? []) {
+			for (const [index, call] of (msg.tool_calls ?? []).entries()) {
 				let input = {};
 				const args = call.function?.arguments;
 				if (typeof args === "string" && args.trim()) {
@@ -351,10 +352,17 @@ export async function toAnthropic(body, options = {}) {
 				} else if (isObject(args)) {
 					input = args;
 				}
+				const name = call.function?.name ?? call.name ?? "unknown_tool";
+				// A generated id must be stable: a random one would change the prompt
+				// prefix on every turn and silently destroy prompt caching for every
+				// message after it.
+				const id =
+					call.id ??
+					`toolu_${fnv1a(`${name}\n${typeof args === "string" ? args : JSON.stringify(input)}\n${index}`)}`;
 				blocks.push({
 					type: "tool_use",
-					id: call.id ?? `call_${Math.random().toString(36).slice(2, 10)}`,
-					name: call.function?.name ?? call.name ?? "unknown_tool",
+					id,
+					name,
 					input,
 				});
 			}
@@ -440,9 +448,7 @@ export async function toAnthropic(body, options = {}) {
 	}
 
 	const cacheBreakpoints = options.cacheControl?.enabled
-		? applyCacheControl(anthropic, {
-				breakpoints: options.cacheControl.breakpoints,
-			})
+		? applyCacheControl(anthropic, options.cacheControl)
 		: 0;
 
 	return {

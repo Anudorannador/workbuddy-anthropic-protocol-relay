@@ -11,6 +11,7 @@
 import http from "node:http";
 import https from "node:https";
 import { toAnthropic } from "./translate-request.mjs";
+import { createPrefixWatcher } from "./prefix-watch.mjs";
 import {
   createSseTranslator,
   convertNonStreaming,
@@ -28,8 +29,12 @@ export const DEFAULTS = {
   modelMap: null,
   maxTokensMap: null,
   defaultMaxTokens: undefined,
-  cacheControl: { enabled: true, breakpoints: 3 },
+  cacheControl: { enabled: true, breakpoints: 3, ttl: null },
+  cacheDebug: false,
 };
+
+/** Upstream beta header required for the one-hour prompt cache. */
+export const EXTENDED_CACHE_BETA = "extended-cache-ttl-2025-04-11";
 
 /** Extract an API key from either supported inbound header. */
 export function extractApiKey(headers) {
@@ -56,6 +61,7 @@ export function createRelayServer(options = {}) {
   const log = cfg.logger ?? { info: () => {}, warn: () => {} };
   const transport = cfg.upstreamProtocol === "http" ? http : https;
   const version = cfg.version ?? "0.0.0";
+  const watcher = createPrefixWatcher();
 
   return http.createServer((req, res) => {
     if (req.method === "GET" && (req.url === "/_health" || req.url === "/health")) {
@@ -130,8 +136,44 @@ export function createRelayServer(options = {}) {
         );
       }
 
+      if (cfg.cacheDebug) {
+        // Which segment first differs from the previous call for this model.
+        const segments = [];
+        if (anthropic.system) {
+          segments.push({
+            kind: "system",
+            text:
+              typeof anthropic.system === "string"
+                ? anthropic.system
+                : JSON.stringify(anthropic.system),
+          });
+        }
+        for (const [i, m] of anthropic.messages.entries()) {
+          segments.push({ kind: `msg[${i}]`, role: m.role, text: JSON.stringify(m.content) });
+        }
+        const seen = watcher.observe(String(anthropic.model), segments);
+        const d = seen.drift;
+        log.info(
+          `cache-debug model=${anthropic.model} segs=${seen.segs} stable=${seen.stable} ` +
+            (d
+              ? `drift=${d.kind}${d.role ? `(${d.role})` : ""} len ${d.lenFrom}->${d.lenTo} ` +
+                `timestamps ${d.timeFrom}->${d.timeTo} ids ${d.idsFrom}->${d.idsTo}`
+              : "drift=none"),
+        );
+      }
+
       const payload = Buffer.from(JSON.stringify(anthropic));
       const key = extractApiKey(req.headers);
+      const upstreamHeaders = {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": cfg.anthropicVersion,
+        accept: anthropic.stream ? "text/event-stream" : "application/json",
+        "content-length": payload.length,
+      };
+      if (cfg.cacheControl?.ttl === "1h") {
+        upstreamHeaders["anthropic-beta"] = EXTENDED_CACHE_BETA;
+      }
 
       const upstreamReq = transport.request(
         {
@@ -139,13 +181,7 @@ export function createRelayServer(options = {}) {
           port: cfg.upstreamPort,
           path: cfg.upstreamPath,
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": cfg.anthropicVersion,
-            accept: anthropic.stream ? "text/event-stream" : "application/json",
-            "content-length": payload.length,
-          },
+          headers: upstreamHeaders,
         },
         (upstreamRes) => {
           const contentType = upstreamRes.headers["content-type"] ?? "";
