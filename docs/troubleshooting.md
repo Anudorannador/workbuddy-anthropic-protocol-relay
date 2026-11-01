@@ -76,6 +76,10 @@ Check `RELAY_UPSTREAM_HOST` and outbound connectivity first.
   `thinking_delta` events.
 - Some clients ignore `reasoning_content` entirely; the text answer still works.
 - If you need reasoning guaranteed, keep the `-<effort>` suffix on the model id.
+- If the model id carries no effort and the dump line shows `effort=` empty, the
+  client never sent one: it has no `reasoning.supportedEfforts` declared, or the
+  picker's selected level is not in that list. See
+  [the client setup page](workbuddy-setup.md#3-field-by-field-mapping).
 
 ## Streams cut off at ~60 seconds
 

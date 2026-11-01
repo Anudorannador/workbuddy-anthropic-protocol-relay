@@ -70,16 +70,24 @@ the upstream API key as either `x-api-key` or `Authorization: Bearer <key>`.
 ## Configuring a client
 
 Most clients let you add a custom OpenAI-compatible model. See
-[`config/models.example.json`](config/models.example.json) for a WorkBuddy-style
-entry. The essential fields:
+[`config/models.example.json`](config/models.example.json) for two ready-made
+WorkBuddy entries, and
+[`docs/workbuddy-setup.md`](docs/workbuddy-setup.md) for the full walkthrough
+with screenshots of every dialog and picker state.
+
+![WorkBuddy picker with effort and context rows](docs/images/workbuddy-02-picker-flexible.png)
+
+The essential fields:
 
 | Field | Value |
 | --- | --- |
-| `url` | `http://127.0.0.1:8787/v1/chat/completions` |
+| `url` | `http://127.0.0.1:8787/v1/chat/completions` — the **full** path; with `useCustomProtocol: true` the client posts here verbatim |
 | `apiKey` | your upstream key (**do not commit this file**) |
 | `useCustomProtocol` | `true` (the relay already serves the exact path) |
 | `maxInputTokens` | whatever the upstream model really supports |
 | `maxOutputTokens` | `128000` for current Claude 1M-context models |
+| `reasoning.supportedEfforts` | the levels the client's picker should offer; without it the client sends no effort |
+| `contextWindow.supportedLengths` | the context sizes the picker should offer |
 
 Copy the example to `config/models.json` and fill in your key. That filename is
 git-ignored on purpose.
@@ -92,7 +100,13 @@ needed when the client cannot send an effort at all.
 | Id | Effort comes from | When to use |
 | --- | --- | --- |
 | `claude-haiku-5-5` | the client's effort selector, sent as `reasoning.effort` | default; keeps the model picker short |
-| `claude-haiku-5-5-1m-high` | the id itself | the client has no effort selector, or you want a fixed preset per entry |
+| `claude-haiku-5-5-512k-high` | the id itself | the client has no effort selector, or you want a fixed preset per entry |
+
+A pinned preset should also set `onlyReasoning: true`, a single value in
+`reasoning.supportedEfforts`, and a single `contextWindow.supportedLengths`, so
+the picker shows the preset as one fixed choice instead of a switchboard. The
+example file contains both patterns side by side.
+
 
 Precedence, most explicit first: **id suffix → `reasoning.effort` → `reasoning_effort` → none**. Effort maps to `thinking: {type: "adaptive"}` plus `output_config: {effort: …}`; with no effort at all the relay sends no `thinking` block, which is the right choice for endpoints that reject it.
 

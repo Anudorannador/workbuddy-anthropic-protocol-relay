@@ -4,6 +4,26 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `docs/workbuddy-setup.md` — client setup walkthrough with screenshots of the
+  WorkBuddy dialogs and picker states, a field-by-field mapping from each UI
+  control to its JSON key, and the two supported configuration shapes
+  (flexible entry vs pinned preset).
+- `config/models.example.json` now ships both shapes: flexible entries with
+  three context tiers and all five efforts, plus one pinned preset
+  (`claude-haiku-5-5-512k-high`) with `onlyReasoning`, a single effort and a
+  single context tier.
+
+### Changed
+
+- Documented two picker behaviours that look like defects but are not: the
+  Context window row is only rendered when at least two lengths are declared,
+  and the Thinking effort row stays visible with a single level (which is how a
+  pinned preset is meant to appear).
+
 ## [1.3.0] - 2026-10-23
 
 ### Added
