@@ -21,6 +21,28 @@ recognise `content_block_delta` frames.
  └──────────────┘      OpenAI SSE frames       └───────────────┘  Anthropic SSE frames  └──────────────────┘
 ```
 
+## Quick start
+
+Requires Node.js 20 or newer.
+
+```bash
+git clone <this-repo>
+cd workbuddy-protocol-relay
+
+npm test           # 60 unit tests, no network required
+npm start          # starts on http://127.0.0.1:8787
+```
+
+Health check:
+
+```bash
+curl -s http://127.0.0.1:8787/_health
+# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.1.1"}
+```
+
+Then point your client at `http://127.0.0.1:8787/v1/chat/completions` and supply
+the upstream API key as either `x-api-key` or `Authorization: Bearer <key>`.
+
 ## Features
 
 - **Full request translation** — `system`/`developer` merging, role alternation,
@@ -44,28 +66,6 @@ recognise `content_block_delta` frames.
 - **Loopback only, zero credential storage** — the relay forwards the API key
   it receives and never writes it to disk.
 - **No runtime dependencies** — `node:` standard library only.
-
-## Quick start
-
-Requires Node.js 20 or newer.
-
-```bash
-git clone <this-repo>
-cd workbuddy-protocol-relay
-
-npm test           # 60 unit tests, no network required
-npm start          # starts on http://127.0.0.1:8787
-```
-
-Health check:
-
-```bash
-curl -s http://127.0.0.1:8787/_health
-# {"ok":true,"service":"workbuddy-protocol-relay","version":"1.1.1"}
-```
-
-Then point your client at `http://127.0.0.1:8787/v1/chat/completions` and supply
-the upstream API key as either `x-api-key` or `Authorization: Bearer <key>`.
 
 ## Configuring a client
 
